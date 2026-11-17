@@ -185,7 +185,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           .catch(() => {})
       } catch { /* 非 Tauri 环境静默跳过 */ }
     }
-    requestIdleCallback(() => { void init() })
+    // macOS 的 WKWebView（Safari 内核）没有 requestIdleCallback，退回 setTimeout
+    const schedule = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1))
+    schedule(() => { void init() })
   }, [])
 
   // 先选世界观：没有选中任何世界观时，只显示选择页，避免不同世界的数据混在一起。
