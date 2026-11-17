@@ -35,7 +35,7 @@ fn init_blur(window: tauri::WebviewWindow, enabled: bool, is_dark: bool) -> bool
     {
         if enabled {
             let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
-            window_vibrancy::apply_blur(&window, None, None, None).ok();
+            window_vibrancy::apply_vibrancy(&window, window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground, None, None).ok();
         } else {
             window_vibrancy::clear_vibrancy(&window).ok();
             let color = if is_dark { Color(28, 27, 26, 255) } else { Color(254, 252, 248, 255) };
@@ -78,7 +78,7 @@ fn update_blur_effect(window: tauri::WebviewWindow, enabled: bool, is_dark: bool
     {
         if enabled {
             let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
-            window_vibrancy::apply_blur(&window, None, None, None).ok();
+            window_vibrancy::apply_vibrancy(&window, window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground, None, None).ok();
             return true;
         } else {
             window_vibrancy::clear_vibrancy(&window).ok();
