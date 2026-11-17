@@ -151,7 +151,12 @@ export function ProfileBannerEditor({
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-sm text-white opacity-0 transition-opacity group-hover/header:opacity-100 pointer-events-none">
               <button
-                onClick={() => { if (headerInputRef.current) { headerInputRef.current.value = ''; headerInputRef.current.click() } }}
+                onClick={(e) => {
+                  // 阻止冒泡到外层头图区域：外层也会再调一次 input.click()。
+                  // Chromium（Windows）会忽略第二次，macOS 的 WebKit 则会让选好的文件丢失，裁剪框不出现。
+                  e.stopPropagation()
+                  if (headerInputRef.current) { headerInputRef.current.value = ''; headerInputRef.current.click() }
+                }}
                 className="pointer-events-auto flex items-center gap-1.5 bg-transparent hover:bg-transparent"
               >
                 <Camera size={18} strokeWidth={2} />
