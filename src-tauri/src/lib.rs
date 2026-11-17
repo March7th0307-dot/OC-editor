@@ -33,15 +33,13 @@ fn init_blur(window: tauri::WebviewWindow, enabled: bool, is_dark: bool) -> bool
 
     #[cfg(target_os = "macos")]
     {
-        if enabled {
-            let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
-            window_vibrancy::apply_vibrancy(&window, window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground, None, None).ok();
-        } else {
-            window_vibrancy::clear_vibrancy(&window).ok();
-            let color = if is_dark { Color(28, 27, 26, 255) } else { Color(254, 252, 248, 255) };
-            let _ = window.set_background_color(Some(color));
-        }
-        return true;
+        // macOS：未开启 macOSPrivateApi 时 WKWebView 不能透明，透明外壳只会露出白底，
+        // 所以 Mac 上暂报「不支持」，界面走实色背景，设置里的毛玻璃开关会置灰。
+        let _ = enabled;
+        window_vibrancy::clear_vibrancy(&window).ok();
+        let color = if is_dark { Color(28, 27, 26, 255) } else { Color(254, 252, 248, 255) };
+        let _ = window.set_background_color(Some(color));
+        return false;
     }
 
     #[cfg(target_os = "linux")]
@@ -76,16 +74,13 @@ fn update_blur_effect(window: tauri::WebviewWindow, enabled: bool, is_dark: bool
 
     #[cfg(target_os = "macos")]
     {
-        if enabled {
-            let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
-            window_vibrancy::apply_vibrancy(&window, window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground, None, None).ok();
-            return true;
-        } else {
-            window_vibrancy::clear_vibrancy(&window).ok();
-            let color = if is_dark { Color(28, 27, 26, 255) } else { Color(254, 252, 248, 255) };
-            let _ = window.set_background_color(Some(color));
-            return false;
-        }
+        // macOS：未开启 macOSPrivateApi 时 WKWebView 不能透明，透明外壳只会露出白底，
+        // 所以 Mac 上暂报「不支持」，界面走实色背景，设置里的毛玻璃开关会置灰。
+        let _ = enabled;
+        window_vibrancy::clear_vibrancy(&window).ok();
+        let color = if is_dark { Color(28, 27, 26, 255) } else { Color(254, 252, 248, 255) };
+        let _ = window.set_background_color(Some(color));
+        return false;
     }
 
     #[cfg(target_os = "linux")]
