@@ -9,7 +9,7 @@
 
 ## Mac 版下载
 
-到本仓库的 [Releases](../../releases/latest) 下载 `OC editor_0.20.3_universal.dmg`。
+到本仓库的 [Releases](../../releases/latest) 下载 `OC.editor_0.20.3_universal.dmg`。
 同时支持 Apple 芯片（M 系列）和 Intel 芯片的 Mac，需要 macOS 10.13 或更新版本。
 
 安装包没有苹果开发者签名，第一次打开时系统会拦一下：
