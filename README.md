@@ -1,3 +1,51 @@
+# OC editor · Mac 版
+
+> **原作者：[nekibud](https://github.com/nekibud)（Pokanshu）**
+> **原项目：[nekibud/OC-editor](https://github.com/nekibud/OC-editor)**
+>
+> 本仓库是原项目的 Fork，在原作者同意下做了 macOS 移植，并修了几处原有的问题。
+> OC editor 的设计、功能和绝大部分代码都来自原作者，版权归原作者所有，遵循原项目的 [MIT 许可证](LICENSE)。
+> Windows 版请到原作者的仓库下载；喜欢这个软件请去给原项目点 Star。
+
+## Mac 版下载
+
+到本仓库的 [Releases](../../releases/latest) 下载 `OC editor_0.20.3_universal.dmg`。
+同时支持 Apple 芯片（M 系列）和 Intel 芯片的 Mac，需要 macOS 10.15 或更新版本。
+
+安装包没有苹果开发者签名，第一次打开时系统会拦一下：
+在「应用程序」里**右键点 OC editor → 打开 → 再点一次打开**，之后就能正常双击打开了。
+
+## Mac 版做了哪些改动
+
+**macOS 适配**
+- 修复 Mac 上无法编译（毛玻璃代码调用了 Windows 专用函数）
+- 修复启动白屏（Safari 内核没有 `requestIdleCallback`）
+- 修复顶栏、侧边栏白底看不清（Mac 上毛玻璃暂不启用，改用实色背景）
+- 修复「更换头图」按钮选图后没反应
+- 窗口改用 Mac 原生的红黄绿按钮；菜单里的快捷键提示显示为 ⌘
+- 打包成同时支持 Apple 芯片和 Intel 芯片的通用版本
+
+**原有问题修复（Windows 版同样受益）**
+- 备份（.ocbak / ZIP）会丢失地图大图，导入后在地图页导出 PNG/JPG 报错
+- 桌面端导入 .ocmap 时地图图片丢失（CSP 拦截了 data: 地址）
+- 导出文件名里的日期用的是 UTC 时间，凌晨导出会差一天
+- 设置里的「开机自启动」开关只存设置、不生效，现在真正注册到系统
+- 关系图顶部筛选栏在窗口较窄时压住右侧按钮
+- 补全缺失的依赖声明（全新安装依赖后编译失败），修复两处 TypeScript 类型错误
+
+## 从源码编译 Mac 版
+
+```bash
+npm install
+npx tauri build --target universal-apple-darwin
+```
+
+需要 Node.js、Rust，以及 `rustup target add x86_64-apple-darwin aarch64-apple-darwin`。
+
+---
+
+以下是原项目的说明：
+
 ## 下载
 
 **最新版：v0.20.3（全功能回归修复 + .ocbak 分类导出/导入 + 小说 PNG 第三页修复）** → [GitHub Releases](https://github.com/nekibud/OC-editor/releases/latest)
