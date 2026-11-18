@@ -16,6 +16,7 @@ import {
 } from '../services'
 import { normalizeMapParams } from '../params'
 import { downloadMapImage, downloadOcmap, importOcmapFile } from '../mapExport'
+import { isUsableBlob } from '@/lib/map-backup-blobs'
 
 interface MapManagerProps {
   onOpenMap: () => void
@@ -456,7 +457,7 @@ export function MapManager({ onOpenMap, onEditMap }: MapManagerProps) {
                     </select>
                     <button
                       onClick={() => void attachRegion()}
-                      disabled={attachWorldId === null || !selected.imageBlob}
+                      disabled={attachWorldId === null || !isUsableBlob(selected.imageBlob)}
                       className="flex h-7 w-full items-center justify-center rounded border border-line text-[10px] text-ink-muted hover:border-line-hover hover:text-ink disabled:opacity-40"
                     >
                       叠放并打开
@@ -512,7 +513,7 @@ export function MapManager({ onOpenMap, onEditMap }: MapManagerProps) {
                 <div className="grid grid-cols-3 gap-1">
                   <button
                     onClick={() => void handleExport(selected, 'png')}
-                    disabled={!selected.imageBlob}
+                    disabled={!isUsableBlob(selected.imageBlob)}
                     className="flex h-8 items-center justify-center gap-1 rounded border border-line text-[10px] text-ink-muted hover:border-line-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                     title="导出 PNG"
                   >
@@ -521,7 +522,7 @@ export function MapManager({ onOpenMap, onEditMap }: MapManagerProps) {
                   </button>
                   <button
                     onClick={() => void handleExport(selected, 'jpg')}
-                    disabled={!selected.imageBlob}
+                    disabled={!isUsableBlob(selected.imageBlob)}
                     className="flex h-8 items-center justify-center gap-1 rounded border border-line text-[10px] text-ink-muted hover:border-line-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                     title="导出 JPG"
                   >

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import type { MapAnnotation, WorldMapRecord } from '@/types'
 import { normalizeMapParams } from './params'
+import { dataUrlToBlobSync, isUsableBlob } from '@/lib/map-backup-blobs'
 import type { PoliticalData } from './political'
 
 const OCMAP_FORMAT = 'oc-editor-map'
@@ -32,18 +33,16 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
+// 坑：原来用 fetch(dataUrl) 解码，但 Tauri 的 CSP（connect-src 不含 data:）会拦下，
+// 桌面端导入 .ocmap 时图片会丢。改成手动解 base64。
 async function dataUrlToBlob(dataUrl: string): Promise<Blob | null> {
-  try {
-    const response = await fetch(dataUrl)
-    return await response.blob()
-  } catch {
-    return null
-  }
+  return dataUrlToBlobSync(dataUrl) ?? null
 }
 
 async function compositeRecordImage(record: WorldMapRecord): Promise<Blob> {
-  if (!record.imageBlob) throw new Error('这张地图还没有完整图片，请先在生成器中重新生成。')
-  if (!record.paintBlob && (record.annotations ?? []).length === 0) return record.imageBlob
+  // 旧备份导入后 imageBlob 可能是空对象 {}，不能只判断真假
+  if (!isUsableBlob(record.imageBlob)) throw new Error('这张地图还没有完整图片，请先在生成器中重新生成。')
+  if (!isUsableBlob(record.paintBlob) && (record.annotations ?? []).length === 0) return record.imageBlob
   const base = await createImageBitmap(record.imageBlob)
   const canvas = document.createElement('canvas')
   canvas.width = base.width
@@ -56,7 +55,7 @@ async function compositeRecordImage(record: WorldMapRecord): Promise<Blob> {
   context.drawImage(base, 0, 0)
   paintAnnotations(context, record.annotations ?? [], base.width, base.height)
   base.close()
-  if (record.paintBlob) {
+  if (isUsableBlob(record.paintBlob)) {
     const paint = await createImageBitmap(record.paintBlob)
     context.drawImage(paint, 0, 0)
     paint.close()
@@ -229,7 +228,8 @@ export async function downloadMapImage(
   record: WorldMapRecord,
   format: 'png' | 'jpg',
 ): Promise<void> {
-  if (!record.imageBlob) throw new Error('这张地图还没有完整图片，请先在生成器中重新生成。')
+  // 旧备份导入后 imageBlob 可能是空对象 {}，不能只判断真假
+  if (!isUsableBlob(record.imageBlob)) throw new Error('这张地图还没有完整图片，请先在生成器中重新生成。')
   const baseName = safeFileName(record.name)
 
   const composed = await compositeRecordImage(record)
@@ -254,7 +254,7 @@ export async function downloadMapImage(
 }
 
 export async function downloadOcmap(record: WorldMapRecord): Promise<void> {
-  const image = record.imageBlob ? await blobToDataUrl(await compositeRecordImage(record)) : undefined
+  const image = isUsableBlob(record.imageBlob) ? await blobToDataUrl(await compositeRecordImage(record)) : undefined
   const payload = {
     format: OCMAP_FORMAT,
     version: OCMAP_VERSION,

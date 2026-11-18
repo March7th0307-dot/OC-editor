@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { filterByActiveWorld } from '@/lib/world-scope'
 import { createZip, downloadBlob } from '@/lib/zip'
+import { serializeMapBlobs } from '@/lib/map-backup-blobs'
 
 export interface ExportPayload {
   version: 2
@@ -49,7 +50,8 @@ export async function exportAllData(): Promise<ExportPayload> {
       countries,
       worldEntries,
       tags,
-      maps,
+      // 地图大图是 Blob，直接放进 JSON 会变成 {}，先转成 data URL（见 map-backup-blobs.ts）
+      maps: await serializeMapBlobs(maps),
       worlds,
     },
   }

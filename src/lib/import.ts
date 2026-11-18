@@ -1,3 +1,4 @@
+import { deserializeMapBlobs } from '@/lib/map-backup-blobs'
 import { db } from '@/lib/db'
 import { getActiveWorldId, getLegacyWorldId } from '@/lib/world-scope'
 import type { QueryClient } from '@tanstack/react-query'
@@ -268,7 +269,8 @@ export async function importData(
   validateImportData(json)
   const sanitized = stripRemoteUrls(json) as ImportPayload
   const records = sanitized.data
-  const maps = Array.isArray(records.maps) ? records.maps : []
+  // 备份里的地图大图是 data URL，转回 Blob；旧备份里丢失成 {} 的直接去掉（见 map-backup-blobs.ts）
+  const maps = Array.isArray(records.maps) ? await deserializeMapBlobs(records.maps) : []
   const worlds = Array.isArray(records.worlds) ? records.worlds : []
   const worldMap = await resolveImportedWorlds(worlds)
   const fallbackWorldId = getActiveWorldId() ?? getLegacyWorldId() ?? undefined
