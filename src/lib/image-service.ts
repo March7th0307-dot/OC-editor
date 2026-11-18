@@ -93,8 +93,24 @@ export async function uploadImage(type: string): Promise<string> {
   return adapter.upload(type)
 }
 
+/** Tauri convertFileSrc 的产物：macOS/Linux 为 asset://localhost/，Windows/Android 为 http(s)://asset.localhost/。 */
+function isResolvedLocalAssetUrl(path: string): boolean {
+  return (
+    path.startsWith('asset://localhost/') ||
+    path.startsWith('http://asset.localhost/') ||
+    path.startsWith('https://asset.localhost/')
+  )
+}
+
 export function resolveImageUrl(path: string | undefined, type: string = 'avatar'): string {
   if (!path) return getDefaultImage(type)
+  // 已经转换过的本地图片地址原样返回（必须放在下面的远程图片判断之前）。
+  // 坑：关系图节点、角色/国家列表、搜索结果会先 getImageUrl() 再交给 <Avatar>，
+  // 而 <Avatar> 内部又 resolveImageUrl() 一次。二次转换时：
+  //   - macOS 的 asset://localhost/... 被当成相对路径再拼一次数据目录 → 404；
+  //   - Windows 的 http://asset.localhost/... 被当成远程图片 → 降级占位图。
+  // 结果就是这些地方的头像永远显示默认剪影。
+  if (isResolvedLocalAssetUrl(path)) return path
   // 硬约束：不加载任何远程图片。导入数据中的 http(s) URL 在此直接降级为本地占位图。
   if (path.startsWith('https://') || path.startsWith('http://') || path.startsWith('//')) {
     return getDefaultImage(type)
