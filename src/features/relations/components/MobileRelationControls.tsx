@@ -149,8 +149,10 @@ export function MobileRelationControls(props: RelationControlsProps) {
 }
 
 export function DesktopRelationPanel(props: RelationControlsProps) {
+  // 宽度要给右上角的按钮组（曲线/直线、保存、布局、导出、创建、添加关系，约 26rem）留位置；
+  // 原来是 100vw-2rem，窗口一窄就压在右边按钮上。现在超出时换行。
   return (
-    <Panel position="top-left" className="max-md:hidden flex max-w-[calc(100vw-2rem)] min-w-0 flex-wrap items-center gap-3 rounded-xl border border-line bg-paper/85 px-3 py-2 m-3 backdrop-blur-lg">
+    <Panel position="top-left" className="max-md:hidden flex max-w-[calc(100%-28rem)] min-w-0 flex-wrap items-center gap-3 rounded-xl border border-line bg-paper/85 px-3 py-2 m-3 backdrop-blur-lg">
       <RelationFilterButtons {...props} />
       <ZoomSlider zoom={props.zoom} onZoomChange={props.onZoomChange} />
     </Panel>
