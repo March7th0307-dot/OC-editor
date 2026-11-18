@@ -112,6 +112,40 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const { settings, updateSetting } = useSettings()
   const { isMobile } = useDevice()
+  // 开机自启动只有 Tauri 桌面端真正支持（tauri-plugin-autostart）；
+  // WebView2 便携壳和浏览器里没有这个能力，开关置灰，避免"能点但不生效"。
+  const autoStartSupported = !isMobile && typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+  const [autoStartBusy, setAutoStartBusy] = useState(false)
+
+  // 打开设置时以系统里的真实状态为准（用户可能在系统设置里手动关掉了登录项）
+  useEffect(() => {
+    if (!open || !autoStartSupported) return
+    let cancelled = false
+    import('@tauri-apps/plugin-autostart')
+      .then(({ isEnabled }) => isEnabled())
+      .then((enabled) => {
+        if (!cancelled && enabled !== settings.autoStart) updateSetting('autoStart', enabled)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoStartSupported])
+
+  const toggleAutoStart = async () => {
+    const next = !settings.autoStart
+    if (!autoStartSupported) return
+    setAutoStartBusy(true)
+    try {
+      const { enable, disable } = await import('@tauri-apps/plugin-autostart')
+      if (next) await enable()
+      else await disable()
+      updateSetting('autoStart', next)
+    } catch (error) {
+      toast.error(`设置开机自启动失败：${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setAutoStartBusy(false)
+    }
+  }
   const {
     handleExport,
     handleExportZip,
@@ -194,19 +228,21 @@ export function SettingsDialog({
                   <div className="flex flex-col">
                     <span className="text-sm text-ink">开机自启动</span>
                     <span className="text-xs text-ink-faint">
-                      {isMobile ? '桌面端支持开机自启动' : '应用程序将在系统启动时自动运行'}
+                      {isMobile
+                        ? '桌面端支持开机自启动'
+                        : autoStartSupported
+                          ? '应用程序将在系统启动时自动运行'
+                          : '当前版本暂不支持开机自启动'}
                     </span>
                   </div>
                   <button
                     role="switch"
                     aria-checked={settings.autoStart}
-                    disabled={isMobile}
-                    onClick={() =>
-                      updateSetting("autoStart", !settings.autoStart)
-                    }
+                    disabled={!autoStartSupported || autoStartBusy}
+                    onClick={() => void toggleAutoStart()}
                     className={`${SWITCH_CLASSES.base} ${
                       settings.autoStart ? SWITCH_CLASSES.on : SWITCH_CLASSES.off
-                    } ${isMobile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${!autoStartSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <span
                       className={`${SWITCH_DOT} ${

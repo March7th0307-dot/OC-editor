@@ -94,6 +94,14 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .setup(|app| {
+      // 开机自启动：设置里的开关原来只存了一个设置值，没有真正注册到系统。
+      // macOS 用 LaunchAgent（~/Library/LaunchAgents），Windows 写注册表 Run 项。
+      #[cfg(desktop)]
+      app.handle().plugin(tauri_plugin_autostart::init(
+        tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+        None,
+      ))?;
+
       if cfg!(debug_assertions) {
         app.handle().plugin(
           tauri_plugin_log::Builder::default()

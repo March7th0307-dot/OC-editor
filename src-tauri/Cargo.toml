@@ -28,3 +28,7 @@ tauri-plugin-fs = "2"
 window-vibrancy = "0.7"
 windows-version = "0.1"
 tauri-plugin-clipboard-manager = "2.3.2"
+
+# 开机自启动（设置 → 开机自启动）。只在桌面端编译。
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-autostart = "2"
