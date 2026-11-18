@@ -226,6 +226,18 @@ html.tauri-mica body {
   app-region: no-drag;
 }
 
+/* macOS：窗口用系统自带的红黄绿按钮（src-tauri/tauri.macos.conf.json 里
+   titleBarStyle: Overlay，按钮叠在网页顶栏左上角）。
+   所以 Mac 上给顶栏左边让出按钮的位置，并隐藏网页自绘的 — □ × 按钮。
+   data-platform 由 AppShell 在启动时写到 <html> 上，Windows/浏览器不受影响。 */
+html[data-platform="mac-tauri"] .app-titlebar {
+  padding-left: 90px;
+}
+
+html[data-platform="mac-tauri"] [data-window-controls] {
+  display: none;
+}
+
 .transparent-text {
   text-shadow: none;
 }

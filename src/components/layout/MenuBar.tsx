@@ -484,7 +484,7 @@ export function MenuBar() {
       </div>
 
       {windowHost !== 'browser' ? (
-        <div className="flex items-center gap-0" data-no-drag>
+        <div className="flex items-center gap-0" data-no-drag data-window-controls>
           <button
             data-no-drag
             className="h-7 w-7 flex items-center justify-center rounded text-ink-muted hover:text-ink hover:bg-black/5 dark:hover:bg-white/5 transition-colors"

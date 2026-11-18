@@ -20,6 +20,7 @@ import { WorldPicker } from "@/features/worlds/components/WorldPicker"
 import { useWorlds } from "@/features/worlds/hooks/useWorlds"
 import { migratePresetEntriesToCharacters } from "@/features/characters/preset-migration"
 import { useSettings } from "@/lib/settings"
+import { isMacPlatform } from "@/lib/shortcut-label"
 import { useKeyboard } from "@/lib/KeyboardContext"
 import { useBackButton } from "@/lib/useBackButton"
 import { getChromiumVersion, isBelowTargetVersion, isHarmonyOS, getHarmonyOSVersion, isSafeAreaEnvAvailable, estimateSafeAreaInsets, getSafeAreaBottomCorrection, isMobilePlatform } from "@/lib/browser-compat"
@@ -86,6 +87,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Mac 版 Tauri 用系统红黄绿按钮，CSS 根据这个标记给顶栏让位、隐藏自绘按钮（见 globals.css）
+  useEffect(() => {
+    if ('__TAURI_INTERNALS__' in window && isMacPlatform()) {
+      document.documentElement.dataset.platform = 'mac-tauri'
+    }
   }, [])
 
   useEffect(() => {
