@@ -1,5 +1,6 @@
 'use client'
 
+import { shortcutLabel } from '@/lib/shortcut-label'
 import { useState, useEffect, useCallback, useId, useRef, useMemo } from 'react'
 import { tauriReadClipboard } from '@/lib/tauri-clipboard'
 import { useEditor, useEditorState, EditorContent } from '@tiptap/react'
@@ -770,18 +771,18 @@ export function EditorCore({
   const contextMenuItems = useMemo((): ContextMenuItem[] => [
     {
       label: '撤销',
-      shortcut: 'Ctrl+Z',
+      shortcut: shortcutLabel('Ctrl+Z'),
       onClick: () => editor?.chain().focus().undo().run(),
     },
     {
       label: '重做',
-      shortcut: 'Ctrl+Shift+Z',
+      shortcut: shortcutLabel('Ctrl+Shift+Z'),
       onClick: () => editor?.chain().focus().redo().run(),
     },
     { separator: true, label: '', onClick: () => {} },
     {
       label: '剪切',
-      shortcut: 'Ctrl+X',
+      shortcut: shortcutLabel('Ctrl+X'),
       onClick: () => {
         editor?.view.focus()
         try { document.execCommand('cut') } catch { /* noop */ }
@@ -789,7 +790,7 @@ export function EditorCore({
     },
     {
       label: '复制',
-      shortcut: 'Ctrl+C',
+      shortcut: shortcutLabel('Ctrl+C'),
       onClick: () => {
         editor?.view.focus()
         try { document.execCommand('copy') } catch { /* noop */ }
@@ -797,7 +798,7 @@ export function EditorCore({
     },
     {
       label: '粘贴',
-      shortcut: 'Ctrl+V',
+      shortcut: shortcutLabel('Ctrl+V'),
       onClick: () => {
         if (!editor) return
         editor.view.focus()
@@ -809,7 +810,7 @@ export function EditorCore({
     { separator: true, label: '', onClick: () => {} },
     {
       label: '全选',
-      shortcut: 'Ctrl+A',
+      shortcut: shortcutLabel('Ctrl+A'),
       onClick: () => editor?.chain().focus().selectAll().run(),
     },
     { separator: true, label: '', onClick: () => {} },

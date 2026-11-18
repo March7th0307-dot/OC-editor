@@ -1,5 +1,6 @@
 'use client'
 
+import { shortcutLabel } from '@/lib/shortcut-label'
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { tauriReadClipboard } from '@/lib/tauri-clipboard'
 import { createPortal } from 'react-dom'
@@ -332,29 +333,29 @@ export function MenuBar() {
             <DropdownMenuContent>
               <DropdownMenuItem onClick={handleUndo}>
                 撤销
-                <DropdownMenuShortcut>Ctrl+Z</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{shortcutLabel('Ctrl+Z')}</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleRedo}>
                 重做
-                <DropdownMenuShortcut>Ctrl+Shift+Z</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{shortcutLabel('Ctrl+Shift+Z')}</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleCut}>
                 剪切
-                <DropdownMenuShortcut>Ctrl+X</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{shortcutLabel('Ctrl+X')}</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleCopy}>
                 复制
-                <DropdownMenuShortcut>Ctrl+C</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{shortcutLabel('Ctrl+C')}</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handlePaste}>
                 粘贴
-                <DropdownMenuShortcut>Ctrl+V</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{shortcutLabel('Ctrl+V')}</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSelectAll}>
                 全选
-                <DropdownMenuShortcut>Ctrl+A</DropdownMenuShortcut>
+                <DropdownMenuShortcut>{shortcutLabel('Ctrl+A')}</DropdownMenuShortcut>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

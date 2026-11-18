@@ -1,5 +1,6 @@
 'use client'
 
+import { shortcutLabel } from '@/lib/shortcut-label'
 import { useState, useEffect, useCallback, useRef, createContext, useContext, type ReactNode } from 'react'
 import { tauriReadClipboard } from '@/lib/tauri-clipboard'
 import { createPortal } from 'react-dom'
@@ -199,20 +200,20 @@ export function GlobalContextMenu({ children }: { children: ReactNode }) {
       >
         <button onClick={handleCut} className="flex items-center gap-4 rounded-sm px-3 py-1.5 text-left text-sm text-ink hover:bg-black/5 dark:hover:bg-white/5">
           <span>剪切</span>
-          <span className="ml-auto text-xs text-ink-faint">Ctrl+X</span>
+          <span className="ml-auto text-xs text-ink-faint">{shortcutLabel('Ctrl+X')}</span>
         </button>
         <button onClick={handleCopy} className="flex items-center gap-4 rounded-sm px-3 py-1.5 text-left text-sm text-ink hover:bg-black/5 dark:hover:bg-white/5">
           <span>复制</span>
-          <span className="ml-auto text-xs text-ink-faint">Ctrl+C</span>
+          <span className="ml-auto text-xs text-ink-faint">{shortcutLabel('Ctrl+C')}</span>
         </button>
         <button onClick={handlePaste} className="flex items-center gap-4 rounded-sm px-3 py-1.5 text-left text-sm text-ink hover:bg-black/5 dark:hover:bg-white/5">
           <span>粘贴</span>
-          <span className="ml-auto text-xs text-ink-faint">Ctrl+V</span>
+          <span className="ml-auto text-xs text-ink-faint">{shortcutLabel('Ctrl+V')}</span>
         </button>
         <Separator className="my-1" />
         <button onClick={handleSelectAll} className="flex items-center gap-4 rounded-sm px-3 py-1.5 text-left text-sm text-ink hover:bg-black/5 dark:hover:bg-white/5">
           <span>全选</span>
-          <span className="ml-auto text-xs text-ink-faint">Ctrl+A</span>
+          <span className="ml-auto text-xs text-ink-faint">{shortcutLabel('Ctrl+A')}</span>
         </button>
       </div>
     </div>
