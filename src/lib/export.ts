@@ -24,6 +24,16 @@ export interface ExportPayload {
   }
 }
 
+/**
+ * 本地日期 YYYY-MM-DD，用在导出文件名和导出标题里。
+ * 原来用 toISOString().slice(0, 10)，那是 UTC 日期：
+ * 东八区每天 0~8 点导出时会显示成前一天。
+ */
+function localDateStamp(date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 export async function exportAllData(): Promise<ExportPayload> {
   const [characters, events, countries, worldEntries, tags, maps, worlds] = await Promise.all([
     db.characters.filter((c) => !c.deleted).toArray(),
@@ -59,7 +69,7 @@ export async function exportAllData(): Promise<ExportPayload> {
 
 export async function exportAllDataZip(): Promise<{ name: string; size: number }> {
   const data = await exportAllData()
-  const date = new Date().toISOString().slice(0, 10)
+  const date = localDateStamp()
   const manifest = {
     format: 'oc-editor-backup',
     version: 2,
@@ -110,7 +120,7 @@ function isCapacitor(): boolean {
 
 export function downloadJson(data: unknown, filename?: string): string {
   const json = JSON.stringify(data, null, 2)
-  const date = new Date().toISOString().slice(0, 10)
+  const date = localDateStamp()
   const name = filename ?? `oc-backup-${date}.ocbak`
 
   if (isCapacitor()) {
@@ -170,7 +180,7 @@ export async function exportToMarkdown(): Promise<string> {
   const worldEntries = filterByActiveWorld(entriesRaw)
 
   const lines: string[] = []
-  const date = new Date().toISOString().slice(0, 10)
+  const date = localDateStamp()
   lines.push(`# OC editor 导出 — ${date}`)
   lines.push('')
 
@@ -246,7 +256,7 @@ export async function exportToTxt(): Promise<string> {
   const worldEntries = filterByActiveWorld(entriesRaw)
 
   const lines: string[] = []
-  const date = new Date().toISOString().slice(0, 10)
+  const date = localDateStamp()
   lines.push(`OC editor 导出 — ${date}`)
   lines.push('='.repeat(40))
   lines.push('')
@@ -343,12 +353,12 @@ async function downloadTextCapacitor(content: string, filename: string): Promise
 
 export async function downloadMarkdown(): Promise<void> {
   const md = await exportToMarkdown()
-  const date = new Date().toISOString().slice(0, 10)
+  const date = localDateStamp()
   downloadText(md, `oc-export-${date}.md`, 'text/markdown')
 }
 
 export async function downloadTxt(): Promise<void> {
   const txt = await exportToTxt()
-  const date = new Date().toISOString().slice(0, 10)
+  const date = localDateStamp()
   downloadText(txt, `oc-export-${date}.txt`, 'text/plain')
 }
