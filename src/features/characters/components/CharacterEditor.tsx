@@ -146,7 +146,7 @@ function CharacterEditorInner({
   const [element, setElement] = useState(character.element)
   const [occupation, setOccupation] = useState(character.occupation)
   const [nationalityLegacy, setNationalityLegacy] = useState(character.nationalityLegacy)
-  const [countryId, setCountryId] = useState<number | undefined>(character.countryId)
+  const [countryId, setCountryIdState] = useState<number | undefined>(character.countryId)
   const [height, setHeight] = useState(character.height)
   const [birthday, setBirthday] = useState(character.birthday)
   const [extraInfo, setExtraInfo] = useState<Record<ExtraInfoKey, string>>({
@@ -189,24 +189,52 @@ function CharacterEditorInner({
   const [galleryUrls, setGalleryUrls] = useState<string[]>(
     (Array.isArray(character.gallery) ? character.gallery : []).map((g) => (typeof g === 'string' ? g : g.url)),
   )
-  const [relatedCharacters, setRelatedCharacters] = useState<RelatedCharacter[]>(
+  const [relatedCharacters, setRelatedCharactersState] = useState<RelatedCharacter[]>(
     character.relatedCharacters,
   )
-  const [relatedNations, setRelatedNations] = useState<number[]>(character.relatedNations ?? [])
-  const [relatedNationLabels, setRelatedNationLabels] = useState<Record<number, string>>(
+  const [relatedNations, setRelatedNationsState] = useState<number[]>(character.relatedNations ?? [])
+  const [relatedNationLabels, setRelatedNationLabelsState] = useState<Record<number, string>>(
     character.relatedNationLabels ?? {},
   )
-  const [relatedEvents, setRelatedEvents] = useState<number[]>(character.relatedEvents ?? [])
-  const [relatedEventLabels, setRelatedEventLabels] = useState<Record<number, string>>(
+  const [relatedEvents, setRelatedEventsState] = useState<number[]>(character.relatedEvents ?? [])
+  const [relatedEventLabels, setRelatedEventLabelsState] = useState<Record<number, string>>(
     character.relatedEventLabels ?? {},
   )
   const [selectedCustomEntry, setSelectedCustomEntry] = useState('')
+
+  // 用户在本页改关系时才打开这个标记；保存时据此决定要不要写关系字段（见 performSave 注释）。
+  const relationsDirtyRef = useRef(false)
+  const setCountryId: typeof setCountryIdState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setCountryIdState(value)
+  }, [])
+  const setRelatedCharacters: typeof setRelatedCharactersState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedCharactersState(value)
+  }, [])
+  const setRelatedNations: typeof setRelatedNationsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedNationsState(value)
+  }, [])
+  const setRelatedNationLabels: typeof setRelatedNationLabelsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedNationLabelsState(value)
+  }, [])
+  const setRelatedEvents: typeof setRelatedEventsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedEventsState(value)
+  }, [])
+  const setRelatedEventLabels: typeof setRelatedEventLabelsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedEventLabelsState(value)
+  }, [])
   const { sections: customSections, linkEntity, unlinkEntity, updateEntry } = useCustomSections()
 
   const relationSnapshot = useMemo(
     () =>
       JSON.stringify({
         characters: character.relatedCharacters ?? [],
+        countryId: character.countryId ?? null,
         nations: character.relatedNations ?? [],
         nationLabels: character.relatedNationLabels ?? {},
         events: character.relatedEvents ?? [],
@@ -214,6 +242,7 @@ function CharacterEditorInner({
       }),
     [
       character.relatedCharacters,
+      character.countryId,
       character.relatedNations,
       character.relatedNationLabels,
       character.relatedEvents,
@@ -225,14 +254,16 @@ function CharacterEditorInner({
   useEffect(() => {
     if (relationSnapshotRef.current === relationSnapshot) return
     relationSnapshotRef.current = relationSnapshot
-    setRelatedCharacters(character.relatedCharacters ?? [])
-    setRelatedNations(character.relatedNations ?? [])
-    setRelatedNationLabels(character.relatedNationLabels ?? {})
-    setRelatedEvents(character.relatedEvents ?? [])
-    setRelatedEventLabels(character.relatedEventLabels ?? {})
+    setRelatedCharactersState(character.relatedCharacters ?? [])
+    setCountryIdState(character.countryId)
+    setRelatedNationsState(character.relatedNations ?? [])
+    setRelatedNationLabelsState(character.relatedNationLabels ?? {})
+    setRelatedEventsState(character.relatedEvents ?? [])
+    setRelatedEventLabelsState(character.relatedEventLabels ?? {})
   }, [
     relationSnapshot,
     character.relatedCharacters,
+    character.countryId,
     character.relatedNations,
     character.relatedNationLabels,
     character.relatedEvents,
@@ -418,8 +449,30 @@ function CharacterEditorInner({
     }
     saveLockRef.current = true
     if (!silent) setSaving(true)
+    let sendRelations = false
     try {
       const document = docEditorRef.current?.getJSON()
+
+      // 关系字段只在用户真的在本页改过时才写回。
+      // 坑：切到关系图时本编辑页并不卸载（page.tsx 只是隐藏它），它手里的关系列表
+      // 可能比数据库旧（实测：数据库里已删的关系仍留在编辑页状态里）。
+      // 以前每次自动保存都把整份关系写回，会把关系图里刚删掉的关系写回实体投影，
+      // syncRelationsFromEntities 随即把它恢复成「未删除」
+      // （现象：删掉 A—B，再随便连一条线，A—B 又回来了）。
+      // 所以改成「脏标记」：只有用户在本页增删改关系才会写；不能用「与数据库快照比较」，
+      // 因为过期的状态本身就和快照不同，照样会被写回去。
+      sendRelations = relationsDirtyRef.current
+      relationsDirtyRef.current = false
+      const relationFields = sendRelations
+        ? {
+            countryId,
+            relatedCharacters,
+            relatedNations,
+            relatedNationLabels,
+            relatedEvents,
+            relatedEventLabels,
+          }
+        : {}
 
       await onSaveRef.current(character.id as number, {
         name,
@@ -428,7 +481,6 @@ function CharacterEditorInner({
         element,
         occupation,
         nationalityLegacy,
-        countryId,
         height,
         birthday,
         ...extraInfo,
@@ -442,15 +494,15 @@ function CharacterEditorInner({
         bio: character.bio,
         lifeStory: character.lifeStory,
         document,
-        relatedCharacters,
-        relatedNations,
-        relatedNationLabels,
-        relatedEvents,
-        relatedEventLabels,
+        ...relationFields,
         gallery: galleryUrls.map((url) => ({ url, caption: '' })),
         avatars: avatarUrls.map((url) => ({ url, type: 'portrait' as const })),
         tags,
       })
+    } catch (error) {
+      // 保存失败：关系改动还没落库，恢复脏标记，下次保存再写
+      if (sendRelations) relationsDirtyRef.current = true
+      throw error
     } finally {
       saveLockRef.current = false
       if (!silent) setSaving(false)

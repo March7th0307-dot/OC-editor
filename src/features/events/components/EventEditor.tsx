@@ -42,22 +42,41 @@ export function EventEditor({ event, onBack, onSave, onMentionClick, onNavigateI
   const [location, setLocation] = useState(event.location)
   const [summary, setSummary] = useState(event.summary)
   const [isMajor, setIsMajor] = useState(event.isMajor)
-  const [selectedCharacterIds, setSelectedCharacterIds] = useState<number[]>(
+  const [selectedCharacterIds, setSelectedCharacterIdsState] = useState<number[]>(
     event.characters ?? [],
   )
-  const [selectedCountryIds, setSelectedCountryIds] = useState<number[]>(
+  const [selectedCountryIds, setSelectedCountryIdsState] = useState<number[]>(
     event.countries ?? [],
   )
-  const [selectedRelatedEventIds, setSelectedRelatedEventIds] = useState<number[]>(
+  const [selectedRelatedEventIds, setSelectedRelatedEventIdsState] = useState<number[]>(
     (event.relations ?? []).map((relation) => relation.targetId),
   )
-  const [relatedEventLabels, setRelatedEventLabels] = useState<Record<number, string>>(
+  const [relatedEventLabels, setRelatedEventLabelsState] = useState<Record<number, string>>(
     Object.fromEntries(
       (event.relations ?? []).map((relation) => [relation.targetId, relation.relation]),
     ),
   )
   const [saving, setSaving] = useState(false)
   const [tags, setTags] = useState<number[]>(event.tags ?? [])
+
+  // 用户在本页改关系时才打开；保存时据此决定要不要写关系字段。
+  const relationsDirtyRef = useRef(false)
+  const setSelectedCharacterIds: typeof setSelectedCharacterIdsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setSelectedCharacterIdsState(value)
+  }, [])
+  const setSelectedCountryIds: typeof setSelectedCountryIdsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setSelectedCountryIdsState(value)
+  }, [])
+  const setSelectedRelatedEventIds: typeof setSelectedRelatedEventIdsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setSelectedRelatedEventIdsState(value)
+  }, [])
+  const setRelatedEventLabels: typeof setRelatedEventLabelsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedEventLabelsState(value)
+  }, [])
 
   const relationSnapshot = useMemo(
     () =>
@@ -73,11 +92,11 @@ export function EventEditor({ event, onBack, onSave, onMentionClick, onNavigateI
   useEffect(() => {
     if (relationSnapshotRef.current === relationSnapshot) return
     relationSnapshotRef.current = relationSnapshot
-    setSelectedCharacterIds(event.characters ?? [])
-    setSelectedCountryIds(event.countries ?? [])
+    setSelectedCharacterIdsState(event.characters ?? [])
+    setSelectedCountryIdsState(event.countries ?? [])
     const nextRelations = event.relations ?? []
-    setSelectedRelatedEventIds(nextRelations.map((relation) => relation.targetId))
-    setRelatedEventLabels(
+    setSelectedRelatedEventIdsState(nextRelations.map((relation) => relation.targetId))
+    setRelatedEventLabelsState(
       Object.fromEntries(
         nextRelations.map((relation) => [relation.targetId, relation.relation]),
       ),
@@ -148,10 +167,25 @@ export function EventEditor({ event, onBack, onSave, onMentionClick, onNavigateI
   const handleSave = useCallback(async () => {
     if (!editorRef.current) return
     setSaving(true)
+    let sendRelations = false
     try {
       const time = assembleTime(year, month, day)
       const endTimeVal = assembleTime(endYear, endMonth, endDay)
       const document = editorRef.current.getJSON()
+      // 关系字段只在用户在本页改过时才写回（脏标记）。原因见 CharacterEditor.performSave 的注释：
+      // 编辑页切走后不卸载，手里的关系可能已过期，整份写回会让关系图里刚删的关系复活。
+      sendRelations = relationsDirtyRef.current
+      relationsDirtyRef.current = false
+      const relationFields = sendRelations
+        ? {
+            characters: selectedCharacterIds,
+            countries: selectedCountryIds,
+            relations: selectedRelatedEventIds.map((targetId) => ({
+              targetId,
+              relation: relatedEventLabels[targetId]?.trim() || '相关',
+            })),
+          }
+        : {}
       await onSaveRef.current(event.id as number, {
         title,
         time,
@@ -162,14 +196,12 @@ export function EventEditor({ event, onBack, onSave, onMentionClick, onNavigateI
         document,
         content: event.content,
         headerUrl,
-        characters: selectedCharacterIds,
-        countries: selectedCountryIds,
-        relations: selectedRelatedEventIds.map((targetId) => ({
-          targetId,
-          relation: relatedEventLabels[targetId]?.trim() || '相关',
-        })),
+        ...relationFields,
         tags,
       })
+    } catch (error) {
+      if (sendRelations) relationsDirtyRef.current = true
+      throw error
     } finally {
       setSaving(false)
     }

@@ -130,16 +130,39 @@ function CountryEditorInner({
   const [flagUrl, setFlagUrl] = useState(country.flagUrl ?? '')
   const [headerUrl, setHeaderUrl] = useState(country.headerUrl ?? '')
   const [saving, setSaving] = useState(false)
-  const [editableCharIds, setEditableCharIds] = useState<number[]>(country.characters)
-  const [editableEventIds, setEditableEventIds] = useState<number[]>(country.events)
-  const [relatedNations, setRelatedNations] = useState<number[]>(country.relatedNations ?? [])
-  const [relatedNationLabels, setRelatedNationLabels] = useState<Record<number, string>>(
+  const [editableCharIds, setEditableCharIdsState] = useState<number[]>(country.characters)
+  const [editableEventIds, setEditableEventIdsState] = useState<number[]>(country.events)
+  const [relatedNations, setRelatedNationsState] = useState<number[]>(country.relatedNations ?? [])
+  const [relatedNationLabels, setRelatedNationLabelsState] = useState<Record<number, string>>(
     country.relatedNationLabels ?? {},
   )
-  const [relatedEventLabels, setRelatedEventLabels] = useState<Record<number, string>>(
+  const [relatedEventLabels, setRelatedEventLabelsState] = useState<Record<number, string>>(
     country.relatedEventLabels ?? {},
   )
   const [tags, setTags] = useState<number[]>(country.tags ?? [])
+
+  // 用户在本页改关系时才打开；保存时据此决定要不要写关系字段。
+  const relationsDirtyRef = useRef(false)
+  const setEditableCharIds: typeof setEditableCharIdsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setEditableCharIdsState(value)
+  }, [])
+  const setEditableEventIds: typeof setEditableEventIdsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setEditableEventIdsState(value)
+  }, [])
+  const setRelatedNations: typeof setRelatedNationsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedNationsState(value)
+  }, [])
+  const setRelatedNationLabels: typeof setRelatedNationLabelsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedNationLabelsState(value)
+  }, [])
+  const setRelatedEventLabels: typeof setRelatedEventLabelsState = useCallback((value) => {
+    relationsDirtyRef.current = true
+    setRelatedEventLabelsState(value)
+  }, [])
 
   // The graph writes relation labels/sets straight to the country record.
   // Pull those external changes back into the open editor without disturbing
@@ -166,11 +189,11 @@ function CountryEditorInner({
   useEffect(() => {
     if (relationSnapshotRef.current === relationSnapshot) return
     relationSnapshotRef.current = relationSnapshot
-    setEditableCharIds(country.characters ?? [])
-    setEditableEventIds(country.events ?? [])
-    setRelatedNations(country.relatedNations ?? [])
-    setRelatedNationLabels(country.relatedNationLabels ?? {})
-    setRelatedEventLabels(country.relatedEventLabels ?? {})
+    setEditableCharIdsState(country.characters ?? [])
+    setEditableEventIdsState(country.events ?? [])
+    setRelatedNationsState(country.relatedNations ?? [])
+    setRelatedNationLabelsState(country.relatedNationLabels ?? {})
+    setRelatedEventLabelsState(country.relatedEventLabels ?? {})
   }, [
     relationSnapshot,
     country.characters,
@@ -196,8 +219,23 @@ function CountryEditorInner({
 
   const handleSave = useCallback(async () => {
     setSaving(true)
+    let sendRelations = false
     try {
       const document = docEditorRef.current?.getJSON()
+
+      // 关系字段只在用户在本页改过时才写回（脏标记）。原因见 CharacterEditor.performSave 的注释：
+      // 编辑页切走后不卸载，手里的关系可能已过期，整份写回会让关系图里刚删的关系复活。
+      sendRelations = relationsDirtyRef.current
+      relationsDirtyRef.current = false
+      const relationFields = sendRelations
+        ? {
+            characters: editableCharIds,
+            events: editableEventIds,
+            relatedNations,
+            relatedNationLabels,
+            relatedEventLabels,
+          }
+        : {}
 
       await onSaveRef.current(country.id as number, {
         name,
@@ -209,13 +247,12 @@ function CountryEditorInner({
         culture: country.culture,
         flagUrl,
         headerUrl,
-        characters: editableCharIds,
-        events: editableEventIds,
-        relatedNations,
-        relatedNationLabels,
-        relatedEventLabels,
+        ...relationFields,
         tags,
       })
+    } catch (error) {
+      if (sendRelations) relationsDirtyRef.current = true
+      throw error
     } finally {
       setSaving(false)
     }
