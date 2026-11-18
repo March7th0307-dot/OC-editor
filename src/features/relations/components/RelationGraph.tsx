@@ -1383,7 +1383,11 @@ export function RelationGraph({
     }
   }
 
-  const dragPoint = (event: MouseEvent | TouchEvent): { x: number; y: number } =>
+  // React Flow 的拖动回调传的是 React.MouseEvent，原来只声明了 DOM 的 MouseEvent | TouchEvent，
+  // 类型检查会报错（运行没问题）。这里按结构声明，两种事件都收。
+  const dragPoint = (
+    event: { clientX: number; clientY: number } | { touches: ArrayLike<{ clientX: number; clientY: number }> },
+  ): { x: number; y: number } =>
     'clientX' in event
       ? { x: event.clientX, y: event.clientY }
       : {
